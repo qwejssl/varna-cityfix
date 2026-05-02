@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { ReportStatus } from '../../reports/types/report'
+import type { Report, ReportStatus } from '../../reports/types/report'
 import { useAdminReports } from '../hooks/useAdminReports'
 
 const statusLabelMap: Record<ReportStatus, string> = {
@@ -21,18 +21,32 @@ function formatDate(date: string) {
 	})
 }
 
-function getPriorityFromStatus(
-	status: ReportStatus,
-): 'High' | 'Medium' | 'Low' {
-	if (status === 'NEW' || status === 'REJECTED') {
-		return 'High'
+function getPriorityFromReport(report: Report): 'High' | 'Medium' | 'Low' {
+	// Завершённые/отклонённые всегда низкий приоритет
+	if (report.status === 'RESOLVED' || report.status === 'REJECTED') {
+		return 'Low'
 	}
 
-	if (status === 'UNDER_REVIEW' || status === 'IN_PROGRESS') {
-		return 'Medium'
+	// Критичные категории: дорога, освещение, здания
+	if (
+		report.category === 'ROAD' ||
+		report.category === 'STREETLIGHT' ||
+		report.category === 'BUILDING'
+	) {
+		return report.status === 'NEW' ? 'High' : 'Medium'
 	}
 
-	return 'Low'
+	// Средний уровень: тротуары, мусор, парки
+	if (
+		report.category === 'PAVEMENT' ||
+		report.category === 'WASTE' ||
+		report.category === 'PARK'
+	) {
+		return report.status === 'NEW' ? 'Medium' : 'Low'
+	}
+
+	// Остальные
+	return report.status === 'NEW' ? 'Medium' : 'Low'
 }
 
 export default function AdminReportsPage() {
@@ -54,9 +68,7 @@ export default function AdminReportsPage() {
 		}
 
 		if (selectedFilter === 'HIGH_PRIORITY') {
-			return reports.filter(
-				report => getPriorityFromStatus(report.status) === 'High',
-			)
+			return reports.filter(report => getPriorityFromReport(report) === 'High')
 		}
 
 		return reports.filter(report => report.status === selectedFilter)
@@ -184,7 +196,7 @@ export default function AdminReportsPage() {
 						</thead>
 						<tbody>
 							{filteredReports.map(report => {
-								const priority = getPriorityFromStatus(report.status)
+								const priority = getPriorityFromReport(report)
 
 								return (
 									<tr key={report.id}>

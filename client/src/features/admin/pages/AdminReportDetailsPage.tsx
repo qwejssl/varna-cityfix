@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { updateReport } from '../../reports/api/reportsApi'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { deleteReport, updateReport } from '../../reports/api/reportsApi'
 import { useReport } from '../../reports/hooks/useReport'
 import type { ReportStatus } from '../../reports/types/report'
 
@@ -35,6 +35,7 @@ function getPriorityFromStatus(
 }
 
 export default function AdminReportDetailsPage() {
+	const navigate = useNavigate()
 	const { id } = useParams()
 	const reportId = id ? Number(id) : undefined
 	const { report, isLoading, error } = useReport(reportId)
@@ -42,6 +43,7 @@ export default function AdminReportDetailsPage() {
 	const [selectedStatus, setSelectedStatus] = useState<ReportStatus>('NEW')
 	const [adminNote, setAdminNote] = useState('')
 	const [isSaving, setIsSaving] = useState(false)
+	const [isDeleting, setIsDeleting] = useState(false)
 	const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
 	useEffect(() => {
@@ -49,7 +51,6 @@ export default function AdminReportDetailsPage() {
 			return
 		}
 
-		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setSelectedStatus(report.status)
 		setAdminNote(report.admin_note ?? '')
 	}, [report])
@@ -83,6 +84,34 @@ export default function AdminReportDetailsPage() {
 			setSaveMessage(message)
 		} finally {
 			setIsSaving(false)
+		}
+	}
+
+	const handleDelete = async () => {
+		if (!reportId) {
+			return
+		}
+
+		const confirmed = window.confirm(
+			'Are you sure you want to delete this report? This action cannot be undone.',
+		)
+
+		if (!confirmed) {
+			return
+		}
+
+		try {
+			setIsDeleting(true)
+			setSaveMessage(null)
+
+			await deleteReport(reportId)
+			navigate('/admin/reports')
+		} catch (err) {
+			const message =
+				err instanceof Error ? err.message : 'Failed to delete report'
+			setSaveMessage(message)
+		} finally {
+			setIsDeleting(false)
 		}
 	}
 
@@ -186,6 +215,22 @@ export default function AdminReportDetailsPage() {
 								<strong>{report.longitude}</strong>
 							</div>
 						</div>
+
+						{report.image_url ? (
+							<div className='details-image-block'>
+								<h2>Attached photo</h2>
+								<div className='details-image-wrapper'>
+									<img
+										src={report.image_url}
+										alt='Attached report evidence'
+										className='details-image'
+									/>
+								</div>
+								<p className='details-subtext'>
+									Uploaded visual evidence for this report.
+								</p>
+							</div>
+						) : null}
 					</article>
 				</div>
 
@@ -228,9 +273,18 @@ export default function AdminReportDetailsPage() {
 								className='report-action-button report-action-button-primary'
 								type='button'
 								onClick={handleSave}
-								disabled={isSaving}
+								disabled={isSaving || isDeleting}
 							>
 								{isSaving ? 'Saving...' : 'Save changes'}
+							</button>
+
+							<button
+								className='report-action-button report-action-button-danger'
+								type='button'
+								onClick={handleDelete}
+								disabled={isDeleting || isSaving}
+							>
+								{isDeleting ? 'Deleting...' : 'Delete report'}
 							</button>
 						</div>
 

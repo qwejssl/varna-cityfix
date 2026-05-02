@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../auth/context/AuthContext'
 import { geocodeAddress } from '../../map/api/geocodeApi'
-import { createReport } from '../api/reportsApi'
+import { createReport, uploadReportImage } from '../api/reportsApi'
 
 type FormState = {
 	title: string
@@ -10,7 +11,6 @@ type FormState = {
 	address: string
 	latitude: string
 	longitude: string
-	imageUrl: string
 	description: string
 }
 
@@ -21,17 +21,21 @@ const initialState: FormState = {
 	address: '',
 	latitude: '',
 	longitude: '',
-	imageUrl: '',
 	description: '',
 }
 
 export default function NewReportPage() {
 	const navigate = useNavigate()
+	const { accessToken } = useAuth()
 
 	const [form, setForm] = useState<FormState>(initialState)
 	const [message, setMessage] = useState('')
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [isFindingCoordinates, setIsFindingCoordinates] = useState(false)
+	const [selectedFile, setSelectedFile] = useState<File | null>(null)
+	const [previewUrl, setPreviewUrl] = useState('')
+	const [isUploadingImage, setIsUploadingImage] = useState(false)
+	const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
 
 	const updateField =
 		(field: keyof FormState) =>
@@ -72,6 +76,48 @@ export default function NewReportPage() {
 		}
 	}
 
+	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0] ?? null
+		setSelectedFile(file)
+		setUploadedImageUrl(null)
+
+		if (!file) {
+			setPreviewUrl('')
+			return
+		}
+
+		const localPreview = URL.createObjectURL(file)
+		setPreviewUrl(localPreview)
+	}
+
+	const handleUploadImage = async () => {
+		if (!selectedFile) {
+			setMessage('Please select an image first.')
+			return
+		}
+
+		if (!accessToken) {
+			setMessage('You must be logged in to upload an image.')
+			return
+		}
+
+		try {
+			setIsUploadingImage(true)
+			setMessage('')
+
+			const result = await uploadReportImage(selectedFile, accessToken)
+			setUploadedImageUrl(result.image_url)
+
+			setMessage('Image uploaded successfully and attached to the report.')
+		} catch (err) {
+			const errorMessage =
+				err instanceof Error ? err.message : 'Failed to upload image'
+			setMessage(errorMessage)
+		} finally {
+			setIsUploadingImage(false)
+		}
+	}
+
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault()
 
@@ -86,11 +132,16 @@ export default function NewReportPage() {
 			return
 		}
 
+		if (selectedFile && !uploadedImageUrl) {
+			setMessage('Please upload the selected image before submitting.')
+			return
+		}
+
 		try {
 			setIsSubmitting(true)
 			setMessage('')
 
-			await createReport({
+			const payload = {
 				title: form.title.trim(),
 				description: form.description.trim(),
 				category: form.category as
@@ -110,8 +161,12 @@ export default function NewReportPage() {
 				address: form.address.trim(),
 				latitude: Number(form.latitude),
 				longitude: Number(form.longitude),
-				image_url: form.imageUrl.trim() || null,
-			})
+				image_url: uploadedImageUrl,
+			}
+
+			console.log('SUBMIT_PAYLOAD', payload)
+
+			await createReport(payload)
 
 			setMessage('Report submitted successfully.')
 
@@ -279,19 +334,53 @@ export default function NewReportPage() {
 
 					<div className='form-section'>
 						<div className='form-section-heading'>
-							<h2>Optional evidence</h2>
-							<p>Add an image URL if you want to attach a visual reference.</p>
+							<h2>Photo evidence</h2>
+							<p>Upload an image to help city staff assess the issue faster.</p>
 						</div>
 
 						<div className='form-grid'>
 							<div className='form-field form-field-full'>
-								<label htmlFor='imageUrl'>Image URL</label>
+								<label htmlFor='reportImage'>Image file</label>
 								<input
-									id='imageUrl'
-									value={form.imageUrl}
-									onChange={updateField('imageUrl')}
-									placeholder='https://example.com/image.jpg'
+									id='reportImage'
+									type='file'
+									accept='image/png,image/jpeg,image/webp'
+									onChange={handleFileChange}
 								/>
+								<span className='field-helper'>
+									Accepted formats: JPG, PNG, WEBP. Max size: 5 MB.
+								</span>
+							</div>
+
+							{previewUrl ? (
+								<div className='form-field form-field-full'>
+									<div className='upload-preview-card'>
+										<img
+											src={previewUrl}
+											alt='Selected preview'
+											className='upload-preview-image'
+										/>
+									</div>
+								</div>
+							) : null}
+
+							<div className='form-field form-field-full'>
+								<div className='upload-actions'>
+									<button
+										type='button'
+										className='secondary-button'
+										onClick={handleUploadImage}
+										disabled={isUploadingImage || !selectedFile}
+									>
+										{isUploadingImage ? 'Uploading...' : 'Upload image'}
+									</button>
+
+									{uploadedImageUrl ? (
+										<span className='upload-success'>
+											Image uploaded and attached to the report.
+										</span>
+									) : null}
+								</div>
 							</div>
 						</div>
 					</div>
@@ -304,7 +393,7 @@ export default function NewReportPage() {
 						<button
 							type='submit'
 							className='primary-button'
-							disabled={isSubmitting}
+							disabled={isSubmitting || isUploadingImage}
 						>
 							{isSubmitting ? 'Submitting...' : 'Submit report'}
 						</button>

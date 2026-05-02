@@ -7,8 +7,13 @@ export default function Navbar() {
 	return (
 		<header className='site-header'>
 			<div className='container nav-wrapper'>
-				<NavLink to='/' className='brand'>
-					Varna CityFix
+				<NavLink to='/' className='brand navbar-brand'>
+					<img
+						src='/logo.png'
+						alt='Varna CityFix logo'
+						className='navbar-logo'
+					/>
+					<span>Varna CityFix</span>
 				</NavLink>
 
 				<nav className='nav-links'>
