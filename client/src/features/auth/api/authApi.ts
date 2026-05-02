@@ -9,14 +9,17 @@ export type RegisterPayload = {
 export type LoginResponse = {
 	access_token: string
 	token_type: string
+	user_id: number
+	email: string
+	full_name: string
+	role: 'CITIZEN' | 'ADMIN'
 }
 
 export type RegisterResponse = {
 	id: number
 	full_name: string
 	email: string
-	is_active: boolean
-	is_admin: boolean
+	role: 'CITIZEN' | 'ADMIN'
 }
 
 export async function registerUser(payload: RegisterPayload) {

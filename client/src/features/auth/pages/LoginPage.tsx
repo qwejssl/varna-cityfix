@@ -27,19 +27,17 @@ export default function LoginPage() {
 			const normalizedEmail = email.trim().toLowerCase()
 			const result = await loginUser(normalizedEmail, password)
 
-			const isAdmin = normalizedEmail === 'admin@varna-cityfix.bg'
-
 			login({
 				accessToken: result.access_token,
 				user: {
-					id: 0,
-					fullName: isAdmin ? 'Admin Varna' : normalizedEmail.split('@')[0],
-					email: normalizedEmail,
-					role: isAdmin ? 'ADMIN' : 'CITIZEN',
+					id: result.user_id,
+					fullName: result.full_name,
+					email: result.email,
+					role: result.role,
 				},
 			})
 
-			navigate(isAdmin ? '/admin/reports' : '/my-reports')
+			navigate(result.role === 'ADMIN' ? '/admin/reports' : '/my-reports')
 		} catch (err) {
 			const errorMessage = err instanceof Error ? err.message : 'Login failed'
 			setMessage(errorMessage)

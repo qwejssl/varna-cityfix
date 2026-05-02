@@ -3,11 +3,11 @@ import { useReport } from '../hooks/useReport'
 import type { ReportStatus } from '../types/report'
 
 const statusLabelMap: Record<ReportStatus, string> = {
-	NEW: 'New',
-	VERIFIED: 'Verified',
-	IN_PROGRESS: 'In progress',
-	RESOLVED: 'Resolved',
-	REJECTED: 'Rejected',
+  NEW: 'New',
+  UNDER_REVIEW: 'Under review',
+  IN_PROGRESS: 'In progress',
+  RESOLVED: 'Resolved',
+  REJECTED: 'Rejected',
 }
 
 function formatDate(date: string) {
@@ -154,7 +154,7 @@ export default function ReportDetailsPage() {
 								Edit report
 							</Link>
 							<Link
-								to='/map'
+								to='/city-map'
 								className='report-action-button report-action-button-secondary'
 							>
 								Open city map

@@ -23,6 +23,10 @@ class UserRead(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    user_id: int
+    email: EmailStr
+    full_name: str
+    role: UserRole
 
 
 class TokenPayload(BaseModel):

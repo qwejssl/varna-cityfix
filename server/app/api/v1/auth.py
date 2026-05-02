@@ -64,8 +64,23 @@ def login_for_access_token(
     access_token_expires = timedelta(minutes=60 * 24)
     access_token = create_access_token(
         subject=str(user.id),
-        is_admin=(user.role == UserRole.ADMIN),
+        role=user.role,
         expires_delta=access_token_expires,
     )
+
+    return Token(
+        access_token=access_token,
+        user_id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role,
+    )
+
+    access_token_expires = timedelta(minutes=60 * 24)
+    access_token = create_access_token(
+    subject=str(user.id),
+    role=user.role,
+    expires_delta=access_token_expires,
+)
 
     return Token(access_token=access_token)

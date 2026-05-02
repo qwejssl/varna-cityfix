@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.dependencies.auth import get_current_user
-from app.models.enums import ReportStatus
+from app.models.enums import ReportStatus, UserRole
 from app.models.report import Report
 from app.models.user import User
 from app.schemas.report import ReportCreate, ReportRead, ReportUpdate
@@ -32,13 +32,27 @@ def my_reports(
 
 
 @router.get("/{report_id}", response_model=ReportRead)
-def get_report(report_id: int, db: Session = Depends(get_db)):
+def get_report(
+    report_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     report = db.query(Report).filter(Report.id == report_id).first()
     if not report:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Report not found",
         )
+
+    if (
+        current_user.role != UserRole.ADMIN
+        and report.created_by_id != current_user.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can view only your own reports",
+        )
+
     return report
 
 
@@ -73,19 +87,30 @@ def update_report(
             detail="Report not found",
         )
 
-    if report.created_by_id != current_user.id:
+    is_admin = current_user.role == UserRole.ADMIN
+    is_owner = report.created_by_id == current_user.id
+
+    if not is_admin and not is_owner:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can edit only your own reports",
         )
 
-    if report.status not in {ReportStatus.NEW, ReportStatus.UNDER_REVIEW}:
+    if not is_admin and report.status not in {
+        ReportStatus.NEW,
+        ReportStatus.UNDER_REVIEW,
+    }:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Report cannot be edited in its current status",
         )
 
     update_data = report_in.model_dump(exclude_unset=True)
+
+    if not is_admin:
+        update_data.pop("status", None)
+        update_data.pop("admin_note", None)
+
     for field, value in update_data.items():
         setattr(report, field, value)
 
@@ -108,7 +133,10 @@ def delete_report(
             detail="Report not found",
         )
 
-    if report.created_by_id != current_user.id:
+    is_admin = current_user.role == UserRole.ADMIN
+    is_owner = report.created_by_id == current_user.id
+
+    if not is_admin and not is_owner:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can delete only your own reports",

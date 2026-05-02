@@ -6,6 +6,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
+from app.models.enums import UserRole
 
 pwd_context = CryptContext(
     schemes=["bcrypt_sha256"],
@@ -13,7 +14,7 @@ pwd_context = CryptContext(
 )
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 
 def get_password_hash(password: str) -> str:
@@ -26,7 +27,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(
     subject: str,
-    is_admin: bool,
+    role: UserRole,
     expires_delta: Optional[timedelta] = None,
 ) -> str:
     if expires_delta is None:
@@ -36,7 +37,7 @@ def create_access_token(
     to_encode = {
         "sub": subject,
         "exp": expire,
-        "is_admin": is_admin,
+        "role": role.value,
     }
 
     secret_key = settings.secret_key
