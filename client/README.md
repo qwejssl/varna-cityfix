@@ -1,73 +1,84 @@
-# React + TypeScript + Vite
+# Varna CityFix Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend for Varna CityFix — a civic issue reporting platform for Varna, Bulgaria.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React
+- TypeScript
+- Vite
+- React Router
+- Leaflet / React Leaflet
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Public home page and city map
+- User registration and login
+- Protected report creation and editing
+- Personal reports page
+- Admin reports dashboard
+- Report details pages
+- Image upload support through the backend API
 
-## Expanding the ESLint configuration
+## Environment variables
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Create a `.env` file in `client/`:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_API_URL=http://127.0.0.1:8000/api/v1
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Install and run
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
+
+The client runs by default on:
+
+```txt
+http://127.0.0.1:5173
+```
+
+or
+
+```txt
+http://localhost:5173
+```
+
+## Expected backend
+
+The frontend expects the backend API to be running locally on:
+
+```txt
+http://127.0.0.1:8000
+```
+
+## Main routes
+
+- `/` — Home page
+- `/city-map` — City map with reports
+- `/login` — Login
+- `/register` — Registration
+- `/report/new` — Create report
+- `/my-reports` — Current user reports
+- `/admin/reports` — Admin reports list
+
+## Smoke check
+
+After startup, verify:
+
+1. Home page opens.
+2. City map loads.
+3. Registration works.
+4. Login works.
+5. Reports list loads.
+6. New report creation works.
+7. Image upload works.
+8. Admin routes work for admin users.
+
+## Notes
+
+- The project uses `VITE_API_URL` for API requests.
+- Make sure the backend CORS configuration allows the frontend origin.

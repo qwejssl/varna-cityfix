@@ -19,17 +19,22 @@ const initialForm: RegisterForm = {
 export default function RegisterPage() {
 	const navigate = useNavigate()
 	const [form, setForm] = useState<RegisterForm>(initialForm)
-	const [message, setMessage] = useState('')
+	const [errorMessage, setErrorMessage] = useState('')
+	const [successMessage, setSuccessMessage] = useState('')
 	const [isSubmitting, setIsSubmitting] = useState(false)
 
 	const updateField =
 		(field: keyof RegisterForm) =>
 		(event: React.ChangeEvent<HTMLInputElement>) => {
 			setForm(current => ({ ...current, [field]: event.target.value }))
+			if (errorMessage) setErrorMessage('')
+			if (successMessage) setSuccessMessage('')
 		}
 
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault()
+
+		if (isSubmitting) return
 
 		if (
 			!form.fullName.trim() ||
@@ -37,18 +42,19 @@ export default function RegisterPage() {
 			!form.password.trim() ||
 			!form.confirmPassword.trim()
 		) {
-			setMessage('Please fill in all fields.')
+			setErrorMessage('Please fill in all fields.')
 			return
 		}
 
 		if (form.password !== form.confirmPassword) {
-			setMessage('Passwords do not match.')
+			setErrorMessage('Passwords do not match.')
 			return
 		}
 
 		try {
 			setIsSubmitting(true)
-			setMessage('')
+			setErrorMessage('')
+			setSuccessMessage('')
 
 			await registerUser({
 				full_name: form.fullName.trim(),
@@ -56,7 +62,7 @@ export default function RegisterPage() {
 				password: form.password,
 			})
 
-			setMessage('Registration successful. Redirecting to login...')
+			setSuccessMessage('Registration successful. Redirecting to login...')
 
 			setTimeout(() => {
 				navigate('/login')
@@ -64,7 +70,7 @@ export default function RegisterPage() {
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : 'Registration failed'
-			setMessage(errorMessage)
+			setErrorMessage(errorMessage)
 		} finally {
 			setIsSubmitting(false)
 		}
@@ -88,6 +94,7 @@ export default function RegisterPage() {
 								value={form.fullName}
 								onChange={updateField('fullName')}
 								placeholder='Andrei Ivanov'
+								disabled={isSubmitting}
 							/>
 						</div>
 
@@ -99,6 +106,7 @@ export default function RegisterPage() {
 								value={form.email}
 								onChange={updateField('email')}
 								placeholder='name@example.com'
+								disabled={isSubmitting}
 							/>
 						</div>
 
@@ -110,6 +118,7 @@ export default function RegisterPage() {
 								value={form.password}
 								onChange={updateField('password')}
 								placeholder='Create password'
+								disabled={isSubmitting}
 							/>
 						</div>
 
@@ -121,6 +130,7 @@ export default function RegisterPage() {
 								value={form.confirmPassword}
 								onChange={updateField('confirmPassword')}
 								placeholder='Repeat password'
+								disabled={isSubmitting}
 							/>
 						</div>
 					</div>
@@ -135,7 +145,13 @@ export default function RegisterPage() {
 						</button>
 					</div>
 
-					{message ? <p className='auth-helper'>{message}</p> : null}
+					{errorMessage ? (
+						<p className='auth-helper auth-helper-error'>{errorMessage}</p>
+					) : null}
+
+					{successMessage ? (
+						<p className='auth-helper auth-helper-success'>{successMessage}</p>
+					) : null}
 
 					<p className='auth-helper'>
 						Already have an account? <Link to='/login'>Login</Link>

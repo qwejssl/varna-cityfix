@@ -2063,3 +2063,11 @@ a {
 		justify-content: center;
 	}
 }
+
+.auth-helper-error {
+	color: #b42318;
+}
+
+.auth-helper-success {
+	color: #067647;
+}

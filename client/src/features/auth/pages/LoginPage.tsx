@@ -9,20 +9,22 @@ export default function LoginPage() {
 
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
-	const [message, setMessage] = useState('')
+	const [errorMessage, setErrorMessage] = useState('')
 	const [isSubmitting, setIsSubmitting] = useState(false)
 
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault()
 
+		if (isSubmitting) return
+
 		if (!email.trim() || !password.trim()) {
-			setMessage('Please enter email and password.')
+			setErrorMessage('Please enter email and password.')
 			return
 		}
 
 		try {
 			setIsSubmitting(true)
-			setMessage('')
+			setErrorMessage('')
 
 			const normalizedEmail = email.trim().toLowerCase()
 			const result = await loginUser(normalizedEmail, password)
@@ -40,7 +42,7 @@ export default function LoginPage() {
 			navigate(result.role === 'ADMIN' ? '/admin/reports' : '/my-reports')
 		} catch (err) {
 			const errorMessage = err instanceof Error ? err.message : 'Login failed'
-			setMessage(errorMessage)
+			setErrorMessage(errorMessage)
 		} finally {
 			setIsSubmitting(false)
 		}
@@ -65,7 +67,11 @@ export default function LoginPage() {
 								type='email'
 								placeholder='name@example.com'
 								value={email}
-								onChange={event => setEmail(event.target.value)}
+								onChange={event => {
+									setEmail(event.target.value)
+									if (errorMessage) setErrorMessage('')
+								}}
+								disabled={isSubmitting}
 							/>
 						</div>
 
@@ -76,7 +82,11 @@ export default function LoginPage() {
 								type='password'
 								placeholder='Enter your password'
 								value={password}
-								onChange={event => setPassword(event.target.value)}
+								onChange={event => {
+									setPassword(event.target.value)
+									if (errorMessage) setErrorMessage('')
+								}}
+								disabled={isSubmitting}
 							/>
 						</div>
 					</div>
@@ -91,7 +101,9 @@ export default function LoginPage() {
 						</button>
 					</div>
 
-					{message ? <p className='auth-helper'>{message}</p> : null}
+					{errorMessage ? (
+						<p className='auth-helper auth-helper-error'>{errorMessage}</p>
+					) : null}
 
 					<p className='auth-helper'>
 						No account yet? <Link to='/register'>Register</Link>

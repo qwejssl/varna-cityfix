@@ -7,13 +7,14 @@ from fastapi.staticfiles import StaticFiles
 from app.api.v1.reports import router as reports_router
 from app.api.v1.geocode import router as geocode_router
 from app.api.v1.auth import router as auth_router
+from app.core.config import settings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOADS_DIR = BASE_DIR / "uploads"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(
-    title="Varna CityFix API",
+    title=settings.app_name,
     description="Backend API for a city issue reporting platform for Varna, Bulgaria.",
     version="1.0.0",
 )
@@ -22,6 +23,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
+        "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -51,4 +53,5 @@ def health_check():
     return {
         "status": "ok",
         "service": "varna-cityfix-backend",
+        "environment": settings.app_env,
     }

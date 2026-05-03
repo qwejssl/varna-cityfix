@@ -12,9 +12,7 @@ class Settings(BaseSettings):
     db_name: str = "varna_cityfix"
 
     database_url: str = ""
-
-    # NEW — секрет для JWT
-    secret_key: str = "CHANGE_ME_SUPER_SECRET"
+    secret_key: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",

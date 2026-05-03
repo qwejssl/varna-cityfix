@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://127.0.0.1:8000/api/v1'
+const API_BASE_URL =
+	import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1'
+
 const AUTH_TOKEN_STORAGE_KEY = 'varna-cityfix-access-token'
 
 type ApiFetchOptions = RequestInit & {
@@ -12,7 +14,6 @@ export async function apiFetch<T>(
 	const { skipAuth = false, headers, ...rest } = options
 
 	const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)
-
 	const finalHeaders = new Headers(headers)
 
 	if (!finalHeaders.has('Content-Type') && !(rest.body instanceof FormData)) {

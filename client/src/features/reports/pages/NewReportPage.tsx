@@ -29,13 +29,19 @@ export default function NewReportPage() {
 	const { accessToken } = useAuth()
 
 	const [form, setForm] = useState<FormState>(initialState)
-	const [message, setMessage] = useState('')
+	const [errorMessage, setErrorMessage] = useState('')
+	const [successMessage, setSuccessMessage] = useState('')
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [isFindingCoordinates, setIsFindingCoordinates] = useState(false)
 	const [selectedFile, setSelectedFile] = useState<File | null>(null)
 	const [previewUrl, setPreviewUrl] = useState('')
 	const [isUploadingImage, setIsUploadingImage] = useState(false)
 	const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
+
+	const clearMessages = () => {
+		if (errorMessage) setErrorMessage('')
+		if (successMessage) setSuccessMessage('')
+	}
 
 	const updateField =
 		(field: keyof FormState) =>
@@ -45,17 +51,18 @@ export default function NewReportPage() {
 			>,
 		) => {
 			setForm(current => ({ ...current, [field]: event.target.value }))
+			clearMessages()
 		}
 
 	const handleFindCoordinates = async () => {
 		if (!form.address.trim()) {
-			setMessage('Please enter an address first.')
+			setErrorMessage('Please enter an address first.')
 			return
 		}
 
 		try {
 			setIsFindingCoordinates(true)
-			setMessage('')
+			clearMessages()
 
 			const result = await geocodeAddress(form.address.trim())
 
@@ -66,11 +73,11 @@ export default function NewReportPage() {
 				address: current.address || result.display_name,
 			}))
 
-			setMessage('Coordinates updated from the provided address.')
+			setSuccessMessage('Coordinates updated from the provided address.')
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : 'Failed to find coordinates'
-			setMessage(errorMessage)
+			setErrorMessage(errorMessage)
 		} finally {
 			setIsFindingCoordinates(false)
 		}
@@ -80,6 +87,7 @@ export default function NewReportPage() {
 		const file = event.target.files?.[0] ?? null
 		setSelectedFile(file)
 		setUploadedImageUrl(null)
+		clearMessages()
 
 		if (!file) {
 			setPreviewUrl('')
@@ -92,27 +100,28 @@ export default function NewReportPage() {
 
 	const handleUploadImage = async () => {
 		if (!selectedFile) {
-			setMessage('Please select an image first.')
+			setErrorMessage('Please select an image first.')
 			return
 		}
 
 		if (!accessToken) {
-			setMessage('You must be logged in to upload an image.')
+			setErrorMessage('You must be logged in to upload an image.')
 			return
 		}
 
 		try {
 			setIsUploadingImage(true)
-			setMessage('')
+			clearMessages()
 
 			const result = await uploadReportImage(selectedFile, accessToken)
 			setUploadedImageUrl(result.image_url)
-
-			setMessage('Image uploaded successfully and attached to the report.')
+			setSuccessMessage(
+				'Image uploaded successfully and attached to the report.',
+			)
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : 'Failed to upload image'
-			setMessage(errorMessage)
+			setErrorMessage(errorMessage)
 		} finally {
 			setIsUploadingImage(false)
 		}
@@ -121,6 +130,8 @@ export default function NewReportPage() {
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault()
 
+		if (isSubmitting) return
+
 		if (
 			!form.title.trim() ||
 			!form.description.trim() ||
@@ -128,18 +139,18 @@ export default function NewReportPage() {
 			!form.latitude.trim() ||
 			!form.longitude.trim()
 		) {
-			setMessage('Please fill in all required fields.')
+			setErrorMessage('Please fill in all required fields.')
 			return
 		}
 
 		if (selectedFile && !uploadedImageUrl) {
-			setMessage('Please upload the selected image before submitting.')
+			setErrorMessage('Please upload the selected image before submitting.')
 			return
 		}
 
 		try {
 			setIsSubmitting(true)
-			setMessage('')
+			clearMessages()
 
 			const payload = {
 				title: form.title.trim(),
@@ -164,11 +175,9 @@ export default function NewReportPage() {
 				image_url: uploadedImageUrl,
 			}
 
-			console.log('SUBMIT_PAYLOAD', payload)
-
 			await createReport(payload)
 
-			setMessage('Report submitted successfully.')
+			setSuccessMessage('Report submitted successfully.')
 
 			setTimeout(() => {
 				navigate('/my-reports')
@@ -176,7 +185,7 @@ export default function NewReportPage() {
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : 'Failed to submit report'
-			setMessage(errorMessage)
+			setErrorMessage(errorMessage)
 		} finally {
 			setIsSubmitting(false)
 		}
@@ -231,6 +240,7 @@ export default function NewReportPage() {
 									id='title'
 									value={form.title}
 									onChange={updateField('title')}
+									disabled={isSubmitting}
 								/>
 							</div>
 
@@ -240,6 +250,7 @@ export default function NewReportPage() {
 									id='category'
 									value={form.category}
 									onChange={updateField('category')}
+									disabled={isSubmitting}
 								>
 									<option value='PAVEMENT'>PAVEMENT</option>
 									<option value='ROAD'>ROAD</option>
@@ -257,6 +268,7 @@ export default function NewReportPage() {
 									id='district'
 									value={form.district}
 									onChange={updateField('district')}
+									disabled={isSubmitting}
 								>
 									<option value='PRIMORSKI'>PRIMORSKI</option>
 									<option value='ODESSOS'>ODESSOS</option>
@@ -276,6 +288,7 @@ export default function NewReportPage() {
 									placeholder='Describe the issue in detail...'
 									value={form.description}
 									onChange={updateField('description')}
+									disabled={isSubmitting}
 								/>
 								<span className='field-helper'>
 									Explain what is damaged, where it is located and why it needs
@@ -300,12 +313,13 @@ export default function NewReportPage() {
 										value={form.address}
 										onChange={updateField('address')}
 										placeholder='Sea Garden, Varna'
+										disabled={isSubmitting || isFindingCoordinates}
 									/>
 									<button
 										type='button'
 										className='secondary-button'
 										onClick={handleFindCoordinates}
-										disabled={isFindingCoordinates}
+										disabled={isFindingCoordinates || isSubmitting}
 									>
 										{isFindingCoordinates ? 'Finding...' : 'Find coordinates'}
 									</button>
@@ -318,6 +332,7 @@ export default function NewReportPage() {
 									id='latitude'
 									value={form.latitude}
 									onChange={updateField('latitude')}
+									disabled={isSubmitting}
 								/>
 							</div>
 
@@ -327,6 +342,7 @@ export default function NewReportPage() {
 									id='longitude'
 									value={form.longitude}
 									onChange={updateField('longitude')}
+									disabled={isSubmitting}
 								/>
 							</div>
 						</div>
@@ -346,6 +362,7 @@ export default function NewReportPage() {
 									type='file'
 									accept='image/png,image/jpeg,image/webp'
 									onChange={handleFileChange}
+									disabled={isSubmitting || isUploadingImage}
 								/>
 								<span className='field-helper'>
 									Accepted formats: JPG, PNG, WEBP. Max size: 5 MB.
@@ -370,7 +387,7 @@ export default function NewReportPage() {
 										type='button'
 										className='secondary-button'
 										onClick={handleUploadImage}
-										disabled={isUploadingImage || !selectedFile}
+										disabled={isUploadingImage || isSubmitting || !selectedFile}
 									>
 										{isUploadingImage ? 'Uploading...' : 'Upload image'}
 									</button>
@@ -393,13 +410,21 @@ export default function NewReportPage() {
 						<button
 							type='submit'
 							className='primary-button'
-							disabled={isSubmitting || isUploadingImage}
+							disabled={
+								isSubmitting || isUploadingImage || isFindingCoordinates
+							}
 						>
 							{isSubmitting ? 'Submitting...' : 'Submit report'}
 						</button>
 					</div>
 
-					{message ? <p className='success-text'>{message}</p> : null}
+					{errorMessage ? (
+						<p className='auth-helper auth-helper-error'>{errorMessage}</p>
+					) : null}
+
+					{successMessage ? (
+						<p className='auth-helper auth-helper-success'>{successMessage}</p>
+					) : null}
 				</form>
 			</div>
 		</section>
