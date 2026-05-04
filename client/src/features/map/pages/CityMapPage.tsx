@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { useReports } from '../../reports/hooks/useReports'
-import type { Report } from '../../reports/types/report'
+import type { Report, ReportStatus } from '../../reports/types/report'
 import ReportsMap from '../components/ReportsMap'
 
-const ACTIVE_STATUSES = ['NEW', 'UNDER_REVIEW', 'IN_PROGRESS'] as const
+const ACTIVE_STATUSES: ReportStatus[] = ['NEW', 'UNDER_REVIEW', 'IN_PROGRESS']
 
 function isActive(report: Report) {
 	return ACTIVE_STATUSES.includes(report.status)

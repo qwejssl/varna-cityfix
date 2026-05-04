@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/context/AuthContext'
 import { geocodeAddress } from '../../map/api/geocodeApi'
 import { updateReport } from '../api/reportsApi'
 import { useReport } from '../hooks/useReport'
-import type { ReportCategory, VarnaDistrict } from '../types/report'
+import type { Report, ReportCategory, VarnaDistrict } from '../types/report'
 
 const categoryOptions: ReportCategory[] = [
 	'ROAD',
@@ -23,6 +23,11 @@ const districtOptions: VarnaDistrict[] = [
 	'MLADOST',
 	'VLADISLAV_VARNENCHIK',
 ]
+
+function isEditableStatus(status: Report['status']) {
+	// разрешаем редактировать только в статусе NEW
+	return status === 'NEW'
+}
 
 export default function EditReportPage() {
 	const { id } = useParams<{ id: string }>()
@@ -46,16 +51,16 @@ export default function EditReportPage() {
 	const [infoMessage, setInfoMessage] = useState('')
 
 	useEffect(() => {
-		if (report) {
-			setTitle(report.title)
-			setDescription(report.description)
-			setCategory(report.category)
-			setDistrict(report.district)
-			setAddress(report.address)
-			setLatitude(report.latitude)
-			setLongitude(report.longitude)
-			setImageUrl(report.image_url ?? '')
-		}
+		if (!report) return
+		// eslint-disable-next-line react-hooks/set-state-in-effect
+		setTitle(report.title)
+		setDescription(report.description)
+		setCategory(report.category)
+		setDistrict(report.district)
+		setAddress(report.address)
+		setLatitude(report.latitude)
+		setLongitude(report.longitude)
+		setImageUrl(report.image_url ?? '')
 	}, [report])
 
 	if (!reportId) {
@@ -79,8 +84,7 @@ export default function EditReportPage() {
 	}
 
 	const isOwner = user && user.id === report.created_by_id
-	const isEditableStatus =
-		report.status === 'NEW' || report.status === 'VERIFIED'
+	const editable = isOwner && isEditableStatus(report.status)
 
 	if (!isOwner) {
 		return (
@@ -90,7 +94,7 @@ export default function EditReportPage() {
 		)
 	}
 
-	if (!isEditableStatus) {
+	if (!editable) {
 		return (
 			<section className='page-section'>
 				<p className='error-text'>
@@ -155,7 +159,7 @@ export default function EditReportPage() {
 				latitude,
 				longitude,
 				image_url: imageUrl || null,
-				created_by_id: report.created_by_id,
+				// created_by_id убран — на бэке это поле не должно обновляться из формы
 			})
 
 			setInfoMessage('Report updated successfully.')
@@ -178,7 +182,7 @@ export default function EditReportPage() {
 			</Link>
 
 			<h1>Edit Report</h1>
-			<p>You can edit this report while its status is NEW or VERIFIED.</p>
+			<p>You can edit this report while its status is NEW.</p>
 
 			<form className='report-form' onSubmit={handleSubmit}>
 				<div className='form-grid'>

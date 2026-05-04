@@ -135,4 +135,4 @@ After both apps are running, verify:
 
 ## Current status
 
-The project is already a working MVP with authentication, protected routes, reporting flows, admin functionality, and map integration. The next focus areas are UX polish, stronger error handling, and deployment readiness.
+The project is already a working MVP with authentication, protected routes, reporting flows, admin functionality, and map integration.
